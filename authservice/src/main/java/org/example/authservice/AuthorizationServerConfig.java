@@ -107,7 +107,7 @@ public class AuthorizationServerConfig {
                 String json = Files.readString(jwkFile.toPath());
                 JWKSet jwkSet = JWKSet.parse(json);
                 log.info("Läste in RSA-nyckel från {}", jwkFilePath);
-                return (RSAKey) jwkSet.getKeys().get(0);
+                return (RSAKey) jwkSet.getKeys().getFirst();
             } catch (Exception e) {
                 log.warn("Kunde inte läsa JWK-fil, genererar ny: {}", e.getMessage());
             }
