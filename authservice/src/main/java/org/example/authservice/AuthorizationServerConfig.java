@@ -47,6 +47,9 @@ public class AuthorizationServerConfig {
     @Value("${auth.jwk-file:jwk.json}")
     private String jwkFilePath;
 
+    @Value("${security.oauth2.issuer}")
+    private String issuerUri;
+
     @Bean
     public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
         RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
@@ -71,7 +74,7 @@ public class AuthorizationServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://127.0.0.1:9000")
+                .issuer(issuerUri)
                 .build();
     }
 
