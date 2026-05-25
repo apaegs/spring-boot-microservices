@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        input, button, textarea { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; margin: 10px 0; }
+        .message { padding: 5px; border-bottom: 1px solid #eee; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="section">
+    <h2>Skapa användare</h2>
+    <input type="text" id="username" placeholder="Användarnamn">
+    <input type="password" id="password" placeholder="Lösenord">
+    <input type="email" id="email" placeholder="Email">
+    <button onclick="createUser()">Skapa användare</button>
+    <p id="createResult"></p>
+</div>
+
+<div class="section">
+    <h2>Meddelanden</h2>
+    <div id="messages"></div>
+    <textarea id="messageContent" placeholder="Skriv ett meddelande..." rows="3"></textarea>
+    <button onclick="sendMessage()">Skicka</button>
+    <button onclick="loadMessages()">Ladda meddelanden</button>
+</div>
+
+<script>
+    const BFF = 'http://localhost:8080';
+
+    function login() {
+        window.location.href = BFF + '/oauth2/authorization/authservice';
+    }
+
+    async function createUser() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const email = document.getElementById('email').value;
+
+        const response = await fetch(BFF + '/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ username, password, email })
+        });
+
+        if (response.ok) {
+            const user = await response.json();
+            document.getElementById('createResult').textContent = 'Användare skapad: ' + user.username;
+        } else {
+            document.getElementById('createResult').textContent = 'Fel: ' + response.status;
+        }
+    }
+
+    async function sendMessage() {
+        const content = document.getElementById('messageContent').value;
+
+        const response = await fetch(BFF + '/api/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ content })
+        });
+
+        if (response.ok) {
+            document.getElementById('messageContent').value = '';
+            loadMessages();
+        } else {
+            alert('Fel vid skickande: ' + response.status);
+        }
+    }
+
+    async function loadMessages() {
+        const response = await fetch(BFF + '/api/messages', {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const messages = await response.json();
+            const div = document.getElementById('messages');
+            div.innerHTML = messages.map(m =>
+                `<div class="message"><strong>${m.senderUsername}</strong>: ${m.content} <small>(${m.sentAt})</small></div>`
+            ).join('');
+        }
+    }
+</script>
+</body>
+</html>
