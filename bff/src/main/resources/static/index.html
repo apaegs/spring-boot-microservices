@@ -34,10 +34,11 @@
 </div>
 
 <script>
-    const BFF = 'http://localhost:8080';
+    const BFF = '';
 
-    function login() {
-        window.location.href = BFF + '/oauth2/authorization/authservice';
+    function getCsrfToken() {
+        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
+        return cookie ? decodeURIComponent(cookie.split('=')[1].trim()) : null;
     }
 
     async function createUser() {
@@ -45,9 +46,12 @@
         const password = document.getElementById('password').value;
         const email = document.getElementById('email').value;
 
-        const response = await fetch(BFF + '/api/users', {
+        const response = await fetch('/api/users', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': getCsrfToken()
+            },
             credentials: 'include',
             body: JSON.stringify({ username, password, email })
         });
@@ -63,9 +67,12 @@
     async function sendMessage() {
         const content = document.getElementById('messageContent').value;
 
-        const response = await fetch(BFF + '/api/messages', {
+        const response = await fetch('/api/messages', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': getCsrfToken()
+            },
             credentials: 'include',
             body: JSON.stringify({ content })
         });
@@ -79,16 +86,31 @@
     }
 
     async function loadMessages() {
-        const response = await fetch(BFF + '/api/messages', {
+        const response = await fetch('/api/messages', {
             credentials: 'include'
         });
 
         if (response.ok) {
             const messages = await response.json();
             const div = document.getElementById('messages');
-            div.innerHTML = messages.map(m =>
-                `<div class="message"><strong>${m.senderUsername}</strong>: ${m.content} <small>(${m.sentAt})</small></div>`
-            ).join('');
+            div.innerHTML = '';
+            messages.forEach(m => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+
+                const strong = document.createElement('strong');
+                strong.textContent = m.senderUsername;
+
+                const content = document.createTextNode(': ' + m.content + ' ');
+
+                const small = document.createElement('small');
+                small.textContent = '(' + m.sentAt + ')';
+
+                messageDiv.appendChild(strong);
+                messageDiv.appendChild(content);
+                messageDiv.appendChild(small);
+                div.appendChild(messageDiv);
+            });
         }
     }
 </script>
