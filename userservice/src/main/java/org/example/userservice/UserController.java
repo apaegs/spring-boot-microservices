@@ -1,6 +1,9 @@
 package org.example.userservice;
 
+import org.example.userservice.dto.UserRequest;
+import org.example.userservice.dto.UserResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,35 +13,46 @@ import java.util.List;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
-    public List<User> getAll() {
-        return userRepository.findAll();
+    public List<UserResponse> getAll() {
+        return userRepository.findAll().stream()
+                .map(u -> new UserResponse(u.getId(), u.getUsername(), u.getEmail()))
+                .toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getById(@PathVariable Long id) {
+    public ResponseEntity<UserResponse> getById(@PathVariable Long id) {
         return userRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(u -> ResponseEntity.ok(new UserResponse(u.getId(), u.getUsername(), u.getEmail())))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public User create(@RequestBody User user) {
-        return userRepository.save(user);
+    public UserResponse create(@RequestBody UserRequest request) {
+        User user = new User(
+                request.username(),
+                passwordEncoder.encode(request.password()),
+                request.email()
+        );
+        User saved = userRepository.save(user);
+        return new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> update(@PathVariable Long id, @RequestBody User updated) {
+    public ResponseEntity<UserResponse> update(@PathVariable Long id, @RequestBody UserRequest request) {
         return userRepository.findById(id)
                 .map(user -> {
-                    user.setUsername(updated.getUsername());
-                    user.setEmail(updated.getEmail());
-                    return ResponseEntity.ok(userRepository.save(user));
+                    user.setUsername(request.username());
+                    user.setEmail(request.email());
+                    User saved = userRepository.save(user);
+                    return ResponseEntity.ok(new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail()));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
