@@ -1,14 +1,16 @@
 package org.example.messageservice;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.example.messageservice.dto.MessageRequest;
 import org.example.messageservice.dto.MessageResponse;
 import org.example.userservice.grpc.GetUserByUsernameRequest;
 import org.example.userservice.grpc.UserServiceGrpc;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
@@ -16,28 +18,38 @@ import java.util.List;
 public class MessageService {
 
     private final MessageRepository messageRepository;
-    private final RabbitTemplate rabbitTemplate;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
     private final UserServiceGrpc.UserServiceBlockingStub userServiceStub;
 
     public MessageService(MessageRepository messageRepository,
-                          RabbitTemplate rabbitTemplate,
+                          OutboxRepository outboxRepository,
+                          ObjectMapper objectMapper,
                           UserServiceGrpc.UserServiceBlockingStub userServiceStub) {
         this.messageRepository = messageRepository;
-        this.rabbitTemplate = rabbitTemplate;
+        this.outboxRepository = outboxRepository;
+        this.objectMapper = objectMapper;
         this.userServiceStub = userServiceStub;
     }
 
+    @Transactional
     public MessageResponse send(String senderUsername, MessageRequest request) {
         String verifiedUsername = fetchUsername(senderUsername);
 
+        // 1. Spara meddelandet
         Message message = new Message(verifiedUsername, request.content());
         Message saved = messageRepository.save(message);
 
-        rabbitTemplate.convertAndSend(
-                RabbitConfig.EXCHANGE,
-                RabbitConfig.ROUTING_KEY,
-                new MessagePublishedEvent(saved.getId(), verifiedUsername, saved.getContent())
+        // 2. Spara outbox event i samma transaktion
+        MessagePublishedEvent event = new MessagePublishedEvent(
+                saved.getId(), verifiedUsername, saved.getContent()
         );
+        try {
+            String payload = objectMapper.writeValueAsString(event);
+            outboxRepository.save(new OutboxEvent("MESSAGE_PUBLISHED", payload));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize outbox event", e);
+        }
 
         return new MessageResponse(saved.getId(), verifiedUsername, saved.getContent(), saved.getSentAt());
     }
@@ -74,7 +86,6 @@ public class MessageService {
             if (e.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND) {
                 throw new IllegalArgumentException("User not found: " + username);
             }
-            // Fallback vid nätverksfel eller andra gRPC-fel
             return username;
         }
     }
