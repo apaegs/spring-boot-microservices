@@ -1,6 +1,6 @@
 package org.example.messageservice;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+
 import io.grpc.Metadata;
 import io.grpc.stub.MetadataUtils;
 import org.example.messageservice.dto.MessageRequest;
@@ -10,13 +10,17 @@ import org.example.userservice.grpc.UserServiceGrpc;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 import org.springframework.security.oauth2.jwt.Jwt;
+import java.util.Optional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MessageService {
@@ -83,23 +87,25 @@ public class MessageService {
     private String fetchUsername(String username) {
         try {
             Jwt jwt = (Jwt) SecurityContextHolder.getContext().getAuthentication().getCredentials();
+
             Metadata metadata = new Metadata();
             metadata.put(
                     Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
                     "Bearer " + jwt.getTokenValue()
             );
-            UserServiceGrpc.UserServiceBlockingStub stub = userServiceStub
+
+            UserServiceGrpc.UserServiceBlockingStub stubWithAuth = userServiceStub
                     .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadata));
 
             GetUserByUsernameRequest request = GetUserByUsernameRequest.newBuilder()
                     .setUsername(username)
                     .build();
-            return stub.getUserByUsername(request).getUsername();
+            return stubWithAuth.getUserByUsername(request).getUsername();
         } catch (io.grpc.StatusRuntimeException e) {
             if (e.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND) {
-                throw new IllegalArgumentException("User not found: " + username);
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found");
             }
-            return username;
+            throw e;
         }
     }
 }
