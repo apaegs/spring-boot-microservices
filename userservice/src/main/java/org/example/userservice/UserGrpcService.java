@@ -6,6 +6,10 @@ import org.example.userservice.grpc.UserResponse;
 import org.example.userservice.grpc.UserServiceGrpc;
 import org.springframework.grpc.server.service.GrpcService;
 
+/**
+ * gRPC service exposing user data for internal services.
+ * Used by Message Service to fetch user information without going through REST.
+ */
 @GrpcService
 public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
 
@@ -15,6 +19,13 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Fetches a user by ID.
+     * Returns NOT_FOUND if the user does not exist.
+     *
+     * @param request          contains the user ID to look up
+     * @param responseObserver used to send back the response or an error
+     */
     @Override
     public void getUser(GetUserRequest request, StreamObserver<UserResponse> responseObserver) {
         userRepository.findById(request.getId())
