@@ -2,6 +2,7 @@ package org.example.userservice;
 
 import org.example.userservice.dto.UserRequest;
 import org.example.userservice.dto.UserResponse;
+import org.example.userservice.dto.UserUpdateRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +47,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponse> update(@PathVariable Long id, @RequestBody UserRequest request) {
+    public ResponseEntity<UserResponse> update(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
         return userRepository.findById(id)
                 .map(user -> {
                     user.setUsername(request.username());
