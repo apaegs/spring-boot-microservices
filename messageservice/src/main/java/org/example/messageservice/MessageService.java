@@ -5,6 +5,9 @@ import org.example.messageservice.dto.MessageResponse;
 import org.example.userservice.grpc.GetUserByUsernameRequest;
 import org.example.userservice.grpc.UserServiceGrpc;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,7 +28,6 @@ public class MessageService {
     }
 
     public MessageResponse send(String senderUsername, MessageRequest request) {
-        // Verifiera att användaren finns i User Service via gRPC
         String verifiedUsername = fetchUsername(senderUsername);
 
         Message message = new Message(verifiedUsername, request.content());
@@ -51,14 +53,28 @@ public class MessageService {
                 .toList();
     }
 
+    public Page<MessageResponse> getAll(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return messageRepository.findAllByOrderBySentAtAsc(pageable)
+                .map(m -> new MessageResponse(
+                        m.getId(),
+                        m.getSenderUsername(),
+                        m.getContent(),
+                        m.getSentAt()
+                ));
+    }
+
     private String fetchUsername(String username) {
         try {
             GetUserByUsernameRequest request = GetUserByUsernameRequest.newBuilder()
                     .setUsername(username)
                     .build();
             return userServiceStub.getUserByUsername(request).getUsername();
-        } catch (Exception e) {
-            // Fallback till JWT-username om User Service inte svarar
+        } catch (io.grpc.StatusRuntimeException e) {
+            if (e.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND) {
+                throw new IllegalArgumentException("User not found: " + username);
+            }
+            // Fallback vid nätverksfel eller andra gRPC-fel
             return username;
         }
     }

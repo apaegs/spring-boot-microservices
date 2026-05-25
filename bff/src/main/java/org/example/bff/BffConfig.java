@@ -1,5 +1,6 @@
 package org.example.bff;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -18,6 +19,12 @@ import static org.springframework.web.servlet.function.RouterFunctions.route;
 @Configuration
 public class BffConfig {
 
+    @Value("${services.user-service.url}")
+    private String userServiceUrl;
+
+    @Value("${services.message-service.url}")
+    private String messageServiceUrl;
+
     @Bean
     SecurityFilterChain security(HttpSecurity http) throws Exception {
         return http
@@ -28,7 +35,9 @@ public class BffConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                 )
-                .oauth2Login(Customizer.withDefaults())
+                .oauth2Login(oauth2 -> oauth2
+                        .defaultSuccessUrl("/chat.html", true)
+                )
                 .oauth2Client(Customizer.withDefaults())
                 .build();
     }
@@ -40,7 +49,7 @@ public class BffConfig {
                 .POST("/api/users/**", http())
                 .PUT("/api/users/**", http())
                 .DELETE("/api/users/**", http())
-                .before(uri("http://localhost:8081"))
+                .before(uri(userServiceUrl))
                 .before(stripPrefix(1))
                 .filter(tokenRelay())
                 .build();
@@ -51,7 +60,7 @@ public class BffConfig {
         return route()
                 .GET("/api/messages/**", http())
                 .POST("/api/messages/**", http())
-                .before(uri("http://localhost:8082"))
+                .before(uri(messageServiceUrl))
                 .before(stripPrefix(1))
                 .filter(tokenRelay())
                 .build();
