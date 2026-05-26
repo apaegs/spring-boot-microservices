@@ -49,11 +49,9 @@ public class MessageService {
     public MessageResponse send(String senderUsername, MessageRequest request) {
         String verifiedUsername = fetchUsername(senderUsername);
 
-        // 1. Spara meddelandet
         Message message = new Message(verifiedUsername, request.content());
         Message saved = messageRepository.save(message);
 
-        // 2. Spara outbox event i samma transaktion
         MessagePublishedEvent event = new MessagePublishedEvent(
                 saved.getId(), verifiedUsername, saved.getContent()
         );

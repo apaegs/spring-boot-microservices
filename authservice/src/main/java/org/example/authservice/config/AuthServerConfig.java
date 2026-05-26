@@ -41,9 +41,6 @@ public class AuthServerConfig {
     @Value("${auth.client-secret}")
     private String clientSecret;
 
-    @Value("${auth.demo-password}")
-    private String demoPassword;
-
     @Value("${auth.jwk-file:jwk.json}")
     private String jwkFilePath;
 
