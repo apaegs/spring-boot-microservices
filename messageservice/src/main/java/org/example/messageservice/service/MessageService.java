@@ -1,10 +1,15 @@
-package org.example.messageservice;
+package org.example.messageservice.service;
 
 
 import io.grpc.Metadata;
 import io.grpc.stub.MetadataUtils;
+import org.example.messageservice.event.MessagePublishedEvent;
 import org.example.messageservice.dto.MessageRequest;
 import org.example.messageservice.dto.MessageResponse;
+import org.example.messageservice.model.Message;
+import org.example.messageservice.model.OutboxEvent;
+import org.example.messageservice.repository.MessageRepository;
+import org.example.messageservice.repository.OutboxRepository;
 import org.example.userservice.grpc.GetUserByUsernameRequest;
 import org.example.userservice.grpc.UserServiceGrpc;
 import org.springframework.data.domain.Page;

@@ -1,16 +1,15 @@
-package org.example.authservice;
+package org.example.authservice.config;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.example.authservice.dto.UserAuthDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -23,7 +22,6 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.web.client.RestClient;
 
 import java.nio.file.Files;
@@ -36,9 +34,9 @@ import java.util.UUID;
 import java.io.File;
 
 @Configuration
-public class AuthorizationServerConfig {
+public class AuthServerConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(AuthorizationServerConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(AuthServerConfig.class);
 
     @Value("${auth.client-secret}")
     private String clientSecret;
