@@ -18,6 +18,8 @@ public class OutboxPublisher {
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
 
+    private static final int MAX_RETRIES = 3;
+
     public OutboxPublisher(OutboxRepository outboxRepository,
                            RabbitTemplate rabbitTemplate,
                            ObjectMapper objectMapper) {
@@ -28,28 +30,28 @@ public class OutboxPublisher {
 
     @Scheduled(fixedDelay = 5000)
     public void publishPendingEvents() {
-        List<OutboxEvent> pendingEvents = outboxRepository.findByStatus(OutboxEvent.OutboxStatus.PENDING);
+        List<OutboxEvent> events = outboxRepository.findByStatusIn(
+                List.of(OutboxEvent.OutboxStatus.PENDING, OutboxEvent.OutboxStatus.FAILED)
+        );
 
-        for (OutboxEvent event : pendingEvents) {
+        for (OutboxEvent event : events) {
+            if (event.getRetryCount() >= MAX_RETRIES) {
+                log.warn("Skipping event {} after {} retries", event.getId(), event.getRetryCount());
+                continue;
+            }
             try {
                 MessagePublishedEvent payload = objectMapper.readValue(
                         event.getPayload(), MessagePublishedEvent.class
                 );
-
-                rabbitTemplate.convertAndSend(
-                        RabbitConfig.EXCHANGE,
-                        RabbitConfig.ROUTING_KEY,
-                        payload
-                );
-
+                rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, RabbitConfig.ROUTING_KEY, payload);
                 event.setStatus(OutboxEvent.OutboxStatus.PROCESSED);
                 outboxRepository.save(event);
                 log.info("Published outbox event {}", event.getId());
-
             } catch (Exception e) {
+                event.incrementRetryCount();
                 event.setStatus(OutboxEvent.OutboxStatus.FAILED);
                 outboxRepository.save(event);
-                log.error("Failed to publish outbox event {}: {}", event.getId(), e.getMessage());
+                log.error("Failed to publish outbox event {} (attempt {}): {}", event.getId(), event.getRetryCount(), e.getMessage());
             }
         }
     }

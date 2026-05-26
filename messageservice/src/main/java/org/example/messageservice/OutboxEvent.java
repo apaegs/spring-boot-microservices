@@ -35,6 +35,11 @@ public class OutboxEvent {
         this.payload = payload;
     }
 
+    @Column(nullable = false)
+    private int retryCount = 0;
+
+    public int getRetryCount() { return retryCount; }
+    public void incrementRetryCount() { retryCount++; }
     public Long getId() { return id; }
     public String getEventType() { return eventType; }
     public String getPayload() { return payload; }

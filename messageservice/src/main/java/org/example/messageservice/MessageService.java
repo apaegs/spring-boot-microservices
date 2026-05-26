@@ -28,6 +28,8 @@ public class MessageService {
     private final ObjectMapper objectMapper;
     private final UserServiceGrpc.UserServiceBlockingStub userServiceStub;
 
+    private static final long GRPC_TIMEOUT_MS = 3000;
+
     public MessageService(MessageRepository messageRepository,
                           OutboxRepository outboxRepository,
                           ObjectMapper objectMapper,
@@ -93,6 +95,7 @@ public class MessageService {
             );
 
             UserServiceGrpc.UserServiceBlockingStub stubWithAuth = userServiceStub
+                    .withDeadlineAfter(GRPC_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
                     .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadata));
 
             GetUserByUsernameRequest request = GetUserByUsernameRequest.newBuilder()
@@ -103,7 +106,7 @@ public class MessageService {
             if (e.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found");
             }
-            throw e;
+            throw new IllegalStateException("Failed to verify user: " + username, e);
         }
     }
 }

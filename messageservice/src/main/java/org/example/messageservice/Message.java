@@ -15,7 +15,7 @@ public class Message {
     @Column(nullable = false)
     private String senderUsername;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @Column(nullable = false)
