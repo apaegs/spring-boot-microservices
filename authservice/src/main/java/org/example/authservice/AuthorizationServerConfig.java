@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -23,6 +24,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.web.client.RestClient;
 
 import java.nio.file.Files;
 import java.security.KeyPair;
@@ -79,14 +81,32 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
-        UserDetails user = User.builder()
-                .username("demo")
-                .password(passwordEncoder.encode(demoPassword))
-                .roles("USER")
+    public UserDetailsService userDetailsService() {
+        RestClient client = RestClient.builder()
+                .baseUrl("http://localhost:8081/users/auth")
                 .build();
 
-        return new InMemoryUserDetailsManager(user);
+        return username -> {
+            try {
+                UserAuthDto user = client
+                        .get()
+                        .uri("/{username}", username)
+                        .retrieve()
+                        .body(UserAuthDto.class);
+
+                if (user == null) {
+                    throw new UsernameNotFoundException("User not found: " + username);
+                }
+
+                return org.springframework.security.core.userdetails.User.builder()
+                        .username(user.username())
+                        .password(user.password())
+                        .roles("USER")
+                        .build();
+            } catch (Exception e) {
+                throw new UsernameNotFoundException("Could not fetch user: " + username);
+            }
+        };
     }
 
 
