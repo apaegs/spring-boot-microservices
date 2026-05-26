@@ -18,6 +18,7 @@ import java.util.List;
 public class MessageController {
 
     private final MessageService messageService;
+    private static final int MAX_PAGE_SIZE = 100;
 
     public MessageController(MessageService messageService) {
         this.messageService = messageService;
@@ -40,8 +41,9 @@ public class MessageController {
     public ResponseEntity<Page<MessageResponse>> getPaged(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        if (page < 0 || size <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be >= 0 and size must be > 0");
+        if (page < 0 || size <= 0 || size > MAX_PAGE_SIZE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "page must be >= 0 and size must be > 0 and <= " + MAX_PAGE_SIZE);
         }
         return ResponseEntity.ok(messageService.getAll(page, size));
     }

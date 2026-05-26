@@ -25,7 +25,7 @@ public class OutboxEvent {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum OutboxStatus {
-        PENDING, PROCESSED, FAILED
+        PENDING, PROCESSED, FAILED, DEAD
     }
 
     public OutboxEvent() {}

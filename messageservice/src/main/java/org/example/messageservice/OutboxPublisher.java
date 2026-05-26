@@ -36,7 +36,9 @@ public class OutboxPublisher {
 
         for (OutboxEvent event : events) {
             if (event.getRetryCount() >= MAX_RETRIES) {
-                log.warn("Skipping event {} after {} retries", event.getId(), event.getRetryCount());
+                log.warn("Permanently failed event {}, marking as DEAD", event.getId());
+                event.setStatus(OutboxEvent.OutboxStatus.DEAD);
+                outboxRepository.save(event);
                 continue;
             }
             try {
@@ -51,7 +53,7 @@ public class OutboxPublisher {
                 event.incrementRetryCount();
                 event.setStatus(OutboxEvent.OutboxStatus.FAILED);
                 outboxRepository.save(event);
-                log.error("Failed to publish outbox event {} (attempt {}): {}", event.getId(), event.getRetryCount(), e.getMessage());
+                log.error("Failed to publish outbox event {} (attempt {})", event.getId(), event.getRetryCount(), e);
             }
         }
     }

@@ -34,7 +34,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/users/auth/**").permitAll()
+                        .requestMatchers("/users/auth/**").access(
+                                new org.springframework.security.web.access.expression.WebExpressionAuthorizationManager(
+                                        "hasIpAddress('127.0.0.1') or hasIpAddress('::1') or hasIpAddress('172.16.0.0/12')"
+                                )
+                        )
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
