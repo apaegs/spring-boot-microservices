@@ -1,6 +1,7 @@
 package org.example.userservice;
 
 import jakarta.validation.Valid;
+import org.example.userservice.dto.UserAuthDto;
 import org.example.userservice.dto.UserRequest;
 import org.example.userservice.dto.UserResponse;
 import org.example.userservice.dto.UserUpdateRequest;
@@ -66,5 +67,19 @@ public class UserController {
         }
         userRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/by-username/{username}")
+    public ResponseEntity<UserResponse> getByUsername(@PathVariable String username) {
+        return userRepository.findByUsername(username)
+                .map(u -> ResponseEntity.ok(new UserResponse(u.getId(), u.getUsername(), u.getEmail())))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/auth/{username}")
+    public ResponseEntity<UserAuthDto> getForAuth(@PathVariable String username) {
+        return userRepository.findByUsername(username)
+                .map(u -> ResponseEntity.ok(new UserAuthDto(u.getUsername(), u.getPassword())))
+                .orElse(ResponseEntity.notFound().build());
     }
 }

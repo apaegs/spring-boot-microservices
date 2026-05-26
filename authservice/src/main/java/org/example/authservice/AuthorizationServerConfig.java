@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -23,6 +24,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.web.client.RestClient;
 
 import java.nio.file.Files;
 import java.security.KeyPair;
@@ -49,6 +51,9 @@ public class AuthorizationServerConfig {
 
     @Value("${security.oauth2.issuer}")
     private String issuerUri;
+
+    @Value("${userservice.url}")
+    private String userServiceUrl;
 
     @Bean
     public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
@@ -79,14 +84,39 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
-        UserDetails user = User.builder()
-                .username("demo")
-                .password(passwordEncoder.encode(demoPassword))
-                .roles("USER")
+    public UserDetailsService userDetailsService() {
+        var requestFactory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(java.time.Duration.ofSeconds(3));
+        requestFactory.setReadTimeout(java.time.Duration.ofSeconds(3));
+
+        RestClient client = RestClient.builder()
+                .baseUrl(userServiceUrl)
+                .requestFactory(requestFactory)
                 .build();
 
-        return new InMemoryUserDetailsManager(user);
+        return username -> {
+            try {
+                UserAuthDto user = client
+                        .get()
+                        .uri("/{username}", username)
+                        .retrieve()
+                        .body(UserAuthDto.class);
+
+                if (user == null) {
+                    throw new UsernameNotFoundException("User not found: " + username);
+                }
+
+                return org.springframework.security.core.userdetails.User.builder()
+                        .username(user.username())
+                        .password(user.password())
+                        .roles("USER")
+                        .build();
+            } catch (UsernameNotFoundException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new UsernameNotFoundException("Could not fetch user: " + username, e);
+            }
+        };
     }
 
 
