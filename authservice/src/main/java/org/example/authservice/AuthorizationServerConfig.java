@@ -69,7 +69,7 @@ public class AuthorizationServerConfig {
                                 OidcScopes.OPENID,
                                 OidcScopes.PROFILE)))
                 .tokenSettings(TokenSettings.builder()
-                        .reuseRefreshTokens(false) // Rotation för säkerhet
+                        .reuseRefreshTokens(false) // Disable token reuse for security
                         .build())
                 .build();
 
@@ -139,10 +139,10 @@ public class AuthorizationServerConfig {
             try {
                 String json = Files.readString(jwkFile.toPath());
                 JWKSet jwkSet = JWKSet.parse(json);
-                log.info("Läste in RSA-nyckel från {}", jwkFilePath);
+                log.info("Loaded RSA key from {}", jwkFilePath);
                 return (RSAKey) jwkSet.getKeys().getFirst();
             } catch (Exception e) {
-                log.warn("Kunde inte läsa JWK-fil, genererar ny: {}", e.getMessage());
+                log.warn("Could not read JWK file, generating new one: {}", e.getMessage());
             }
         }
 
@@ -150,9 +150,9 @@ public class AuthorizationServerConfig {
 
         try {
             Files.writeString(jwkFile.toPath(), new JWKSet(rsaKey).toString(false));
-            log.info("Ny RSA-nyckel sparad till {}", jwkFilePath);
+            log.info("New RSA key saved to {}", jwkFilePath);
         } catch (Exception e) {
-            log.warn("Kunde inte spara JWK-fil: {}", e.getMessage());
+            log.warn("Could not save JWK file: {}", e.getMessage());
         }
 
         return rsaKey;
@@ -173,7 +173,7 @@ public class AuthorizationServerConfig {
         KeyPair keyPair;
         try {
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048); // Standard säkerhetsnivå
+            keyPairGenerator.initialize(2048); // Standard security level
             keyPair = keyPairGenerator.generateKeyPair();
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
