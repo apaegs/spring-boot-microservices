@@ -1,10 +1,12 @@
-package org.example.userservice;
+package org.example.userservice.controller;
 
 import jakarta.validation.Valid;
 import org.example.userservice.dto.UserAuthDto;
 import org.example.userservice.dto.UserRequest;
 import org.example.userservice.dto.UserResponse;
 import org.example.userservice.dto.UserUpdateRequest;
+import org.example.userservice.model.User;
+import org.example.userservice.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;

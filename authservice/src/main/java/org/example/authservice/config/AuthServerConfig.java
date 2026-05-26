@@ -1,16 +1,15 @@
-package org.example.authservice;
+package org.example.authservice.config;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.example.authservice.dto.UserAuthDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -23,7 +22,6 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.web.client.RestClient;
 
 import java.nio.file.Files;
@@ -36,9 +34,9 @@ import java.util.UUID;
 import java.io.File;
 
 @Configuration
-public class AuthorizationServerConfig {
+public class AuthServerConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(AuthorizationServerConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(AuthServerConfig.class);
 
     @Value("${auth.client-secret}")
     private String clientSecret;
@@ -69,7 +67,7 @@ public class AuthorizationServerConfig {
                                 OidcScopes.OPENID,
                                 OidcScopes.PROFILE)))
                 .tokenSettings(TokenSettings.builder()
-                        .reuseRefreshTokens(false) // Rotation för säkerhet
+                        .reuseRefreshTokens(false) // Disable token reuse for security
                         .build())
                 .build();
 
@@ -139,10 +137,10 @@ public class AuthorizationServerConfig {
             try {
                 String json = Files.readString(jwkFile.toPath());
                 JWKSet jwkSet = JWKSet.parse(json);
-                log.info("Läste in RSA-nyckel från {}", jwkFilePath);
+                log.info("Loaded RSA key from {}", jwkFilePath);
                 return (RSAKey) jwkSet.getKeys().getFirst();
             } catch (Exception e) {
-                log.warn("Kunde inte läsa JWK-fil, genererar ny: {}", e.getMessage());
+                log.warn("Could not read JWK file, generating new one: {}", e.getMessage());
             }
         }
 
@@ -150,9 +148,9 @@ public class AuthorizationServerConfig {
 
         try {
             Files.writeString(jwkFile.toPath(), new JWKSet(rsaKey).toString(false));
-            log.info("Ny RSA-nyckel sparad till {}", jwkFilePath);
+            log.info("New RSA key saved to {}", jwkFilePath);
         } catch (Exception e) {
-            log.warn("Kunde inte spara JWK-fil: {}", e.getMessage());
+            log.warn("Could not save JWK file: {}", e.getMessage());
         }
 
         return rsaKey;
@@ -173,7 +171,7 @@ public class AuthorizationServerConfig {
         KeyPair keyPair;
         try {
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048); // Standard säkerhetsnivå
+            keyPairGenerator.initialize(2048); // Standard security level
             keyPair = keyPairGenerator.generateKeyPair();
         } catch (Exception ex) {
             throw new IllegalStateException(ex);

@@ -1,5 +1,7 @@
-package org.example.userservice;
+package org.example.userservice.config;
 
+import org.example.userservice.model.User;
+import org.example.userservice.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

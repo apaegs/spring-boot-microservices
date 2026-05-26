@@ -1,7 +1,8 @@
-package org.example.messageservice;
+package org.example.messageservice.controller;
 
 import org.example.messageservice.dto.MessageRequest;
 import org.example.messageservice.dto.MessageResponse;
+import org.example.messageservice.service.MessageService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

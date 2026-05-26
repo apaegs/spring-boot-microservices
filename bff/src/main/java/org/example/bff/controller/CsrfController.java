@@ -1,4 +1,4 @@
-package org.example.bff;
+package org.example.bff.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.web.csrf.CsrfToken;

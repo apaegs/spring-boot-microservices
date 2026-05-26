@@ -1,10 +1,7 @@
-package org.example.userservice;
+package org.example.userservice.grpc;
 
 import io.grpc.stub.StreamObserver;
-import org.example.userservice.grpc.GetUserByUsernameRequest;
-import org.example.userservice.grpc.GetUserRequest;
-import org.example.userservice.grpc.UserResponse;
-import org.example.userservice.grpc.UserServiceGrpc;
+import org.example.userservice.repository.UserRepository;
 import org.springframework.grpc.server.service.GrpcService;
 
 /**

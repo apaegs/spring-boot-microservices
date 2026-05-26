@@ -1,4 +1,4 @@
-package org.example.bff;
+package org.example.bff.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

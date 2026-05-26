@@ -1,4 +1,4 @@
-package org.example.messageservice;
+package org.example.messageservice.config;
 
 import org.example.userservice.grpc.UserServiceGrpc;
 import org.springframework.context.annotation.Bean;

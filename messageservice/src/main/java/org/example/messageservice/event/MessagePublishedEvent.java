@@ -1,4 +1,4 @@
-package org.example.messageservice;
+package org.example.messageservice.event;
 
 public record MessagePublishedEvent(
         Long messageId,

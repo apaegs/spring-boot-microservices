@@ -1,5 +1,9 @@
-package org.example.messageservice;
+package org.example.messageservice.service;
 
+import org.example.messageservice.event.MessagePublishedEvent;
+import org.example.messageservice.config.RabbitConfig;
+import org.example.messageservice.model.OutboxEvent;
+import org.example.messageservice.repository.OutboxRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
