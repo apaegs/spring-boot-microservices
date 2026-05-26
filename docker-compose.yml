@@ -5,3 +5,62 @@ services:
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
+
+  userservice:
+    build: ./userservice
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SECURITY_OAUTH2_ISSUER: http://authservice:9000
+    depends_on:
+      - rabbitmq
+
+  authservice:
+    build: ./authservice
+    ports:
+      - "9000:9000"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SECURITY_OAUTH2_ISSUER: http://authservice:9000
+      AUTH_CLIENT_SECRET: secret
+      USERSERVICE_URL: http://userservice:8081/users/auth
+    depends_on:
+      - userservice
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "authservice", "9000" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  bff:
+    build: ./bff
+    ports:
+      - "8080:8080"
+    environment:
+      SECURITY_OAUTH2_ISSUER: http://authservice:9000
+      AUTHSERVICE_CLIENT_SECRET: secret
+      USER_SERVICE_URL: http://userservice:8081
+      MESSAGE_SERVICE_URL: http://messageservice:8082
+    depends_on:
+      authservice:
+        condition: service_healthy
+      userservice:
+        condition: service_started
+      messageservice:
+        condition: service_started
+    restart: on-failure
+
+  messageservice:
+    build: ./messageservice
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SECURITY_OAUTH2_ISSUER: http://authservice:9000
+      USERSERVICE_GRPC_ADDRESS: userservice:9091
+    depends_on:
+      - rabbitmq
+      - userservice
+      - authservice
