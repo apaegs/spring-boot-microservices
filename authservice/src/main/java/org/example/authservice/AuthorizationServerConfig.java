@@ -52,6 +52,9 @@ public class AuthorizationServerConfig {
     @Value("${security.oauth2.issuer}")
     private String issuerUri;
 
+    @Value("${userservice.url}")
+    private String userServiceUrl;
+
     @Bean
     public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
         RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
@@ -82,8 +85,13 @@ public class AuthorizationServerConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
+        var requestFactory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(java.time.Duration.ofSeconds(3));
+        requestFactory.setReadTimeout(java.time.Duration.ofSeconds(3));
+
         RestClient client = RestClient.builder()
-                .baseUrl("http://localhost:8081/users/auth")
+                .baseUrl(userServiceUrl)
+                .requestFactory(requestFactory)
                 .build();
 
         return username -> {
@@ -103,8 +111,10 @@ public class AuthorizationServerConfig {
                         .password(user.password())
                         .roles("USER")
                         .build();
+            } catch (UsernameNotFoundException e) {
+                throw e;
             } catch (Exception e) {
-                throw new UsernameNotFoundException("Could not fetch user: " + username);
+                throw new UsernameNotFoundException("Could not fetch user: " + username, e);
             }
         };
     }
