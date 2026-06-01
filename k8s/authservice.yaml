@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authservice
+  template:
+    metadata:
+      labels:
+        app: authservice
+    spec:
+      containers:
+        - name: authservice
+          image: spring-boot-microservices-authservice:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9000
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: AUTH_REDIRECT_URI
+              value: http://app.localhost/login/oauth2/code/authservice
+            - name: SECURITY_OAUTH2_ISSUER
+              value: http://auth.localhost
+            - name: AUTH_CLIENT_SECRET
+              value: secret
+            - name: USERSERVICE_URL
+              value: http://userservice:8081/users/auth
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authservice
+spec:
+  selector:
+    app: authservice
+  ports:
+    - name: http
+      port: 9000
+      targetPort: 9000

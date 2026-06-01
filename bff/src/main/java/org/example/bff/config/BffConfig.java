@@ -29,6 +29,7 @@ public class BffConfig {
     SecurityFilterChain security(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/favicon.ico", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(csrf -> csrf
