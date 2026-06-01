@@ -12,18 +12,27 @@ spec:
       labels:
         app: userservice
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: userservice
           image: spring-boot-microservices-userservice:latest
           imagePullPolicy: Never
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 8081
             - containerPort: 9091
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: dev
-            - name: SECURITY_OAUTH2_ISSUER
-              value: http://authservice:9000
+            - name: SECURITY_OAUTH2_JWKSET
+              value: http://authservice:9000/oauth2/jwks
 ---
 apiVersion: v1
 kind: Service
