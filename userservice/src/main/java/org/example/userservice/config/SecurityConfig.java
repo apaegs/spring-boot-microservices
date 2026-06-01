@@ -1,5 +1,6 @@
 package org.example.userservice.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -8,10 +9,24 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
+import org.springframework.security.oauth2.jwt.JwtClaimValidator;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+    private String jwkSetUri;
+
+    @Value("${security.oauth2.expected-issuer}")
+    private String expectedIssuer;
 
     @Bean
     @Profile("dev")
@@ -36,7 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/users/auth/**").access(
                                 new org.springframework.security.web.access.expression.WebExpressionAuthorizationManager(
-                                        "hasIpAddress('127.0.0.1') or hasIpAddress('::1') or hasIpAddress('172.16.0.0/12')"
+                                        "hasIpAddress('127.0.0.1') or hasIpAddress('::1') or hasIpAddress('172.16.0.0/12') or hasIpAddress('10.0.0.0/8')"
                                 )
                         )
                         .anyRequest().authenticated()
@@ -50,6 +65,30 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .build();
+    }
+
+    /**
+     * Builds a JwtDecoder that fetches the signing key from the JWKS endpoint
+     * (reachable internally as authservice:9000) and additionally enforces that
+     * the token's "iss" claim matches the expected issuer. The issuer is validated
+     * by string comparison without attempting to reach the issuer URL, which is
+     * not resolvable from inside the cluster.
+     */
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+
+        OAuth2TokenValidator<Jwt> withIssuer =
+                new JwtClaimValidator<String>(JwtClaimNames.ISS,
+                        iss -> expectedIssuer.equals(iss));
+
+        OAuth2TokenValidator<Jwt> validator =
+                new DelegatingOAuth2TokenValidator<>(
+                        JwtValidators.createDefault(),
+                        withIssuer);
+
+        decoder.setJwtValidator(validator);
+        return decoder;
     }
 
     @Bean

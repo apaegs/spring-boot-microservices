@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messageservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: messageservice
+  template:
+    metadata:
+      labels:
+        app: messageservice
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: messageservice
+          image: spring-boot-microservices-messageservice:latest
+          imagePullPolicy: Never
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: SECURITY_OAUTH2_JWKSET
+              value: http://authservice:9000/oauth2/jwks
+            - name: USERSERVICE_GRPC_ADDRESS
+              value: userservice:9091
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: messageservice
+spec:
+  selector:
+    app: messageservice
+  ports:
+    - name: http
+      port: 8082
+      targetPort: 8082

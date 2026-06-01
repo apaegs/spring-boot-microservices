@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bff
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bff
+  template:
+    metadata:
+      labels:
+        app: bff
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bff
+          image: spring-boot-microservices-bff:latest
+          imagePullPolicy: Never
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8080
+          env:
+            - name: AUTH_AUTHORIZATION_URI
+              value: http://auth.localhost
+            - name: AUTH_TOKEN_URI
+              value: http://authservice:9000
+            - name: AUTH_JWK_SET_URI
+              value: http://authservice:9000
+            - name: AUTH_USER_INFO_URI
+              value: http://authservice:9000
+            - name: AUTHSERVICE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: client-secret
+            - name: USER_SERVICE_URL
+              value: http://userservice:8081
+            - name: MESSAGE_SERVICE_URL
+              value: http://messageservice:8082
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bff
+spec:
+  selector:
+    app: bff
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
