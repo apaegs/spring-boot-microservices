@@ -21,8 +21,8 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: dev
-            - name: SECURITY_OAUTH2_ISSUER
-              value: http://auth.localhost
+            - name: SECURITY_OAUTH2_JWKSET
+              value: http://authservice:9000/oauth2/jwks
             - name: USERSERVICE_GRPC_ADDRESS
               value: userservice:9091
             - name: SPRING_RABBITMQ_HOST

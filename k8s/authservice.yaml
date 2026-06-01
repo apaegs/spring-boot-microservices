@@ -1,3 +1,11 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: auth-secrets
+type: Opaque
+stringData:
+  client-secret: secret
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,11 +34,12 @@ spec:
             - name: SECURITY_OAUTH2_ISSUER
               value: http://auth.localhost
             - name: AUTH_CLIENT_SECRET
-              value: secret
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: client-secret
             - name: USERSERVICE_URL
               value: http://userservice:8081/users/auth
-
-
 ---
 apiVersion: v1
 kind: Service
