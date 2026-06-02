@@ -5,28 +5,136 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
-        input, button, textarea { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
-        button:hover { background: #0056b3; }
-        #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; margin: 10px 0; }
-        .message { padding: 5px; border-bottom: 1px solid #eee; }
-        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        :root {
+            --bg: #0f1115;
+            --panel: #16191f;
+            --panel-2: #1c2027;
+            --border: #262b33;
+            --text: #e6e8eb;
+            --muted: #8b929c;
+            --accent: #3b82f6;
+            --accent-hover: #2f6fd6;
+            --own-bubble: #3b82f6;
+            --own-text: #ffffff;
+            --other-bubble: #1c2027;
+            --radius: 8px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 4px;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 22px;
+        }
+        .section {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin: 16px 0;
+        }
+        .section h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 14px;
+        }
+        label {
+            display: block;
+            color: var(--muted);
+            font-size: 13px;
+            margin: 10px 0 4px;
+        }
+        input, textarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 14px;
+            border-radius: var(--radius);
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        button {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            padding: 10px 18px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius);
+            margin-top: 12px;
+            margin-right: 8px;
+            transition: background 0.15s;
+        }
+        button.secondary {
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        button:hover { background: var(--accent-hover); }
+        button.secondary:hover { background: var(--border); }
+        #messages {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            height: 360px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .row { display: flex; flex-direction: column; max-width: 75%; }
+        .row.own { align-self: flex-end; align-items: flex-end; }
+        .row.other { align-self: flex-start; align-items: flex-start; }
+        .meta { font-size: 11px; color: var(--muted); margin: 0 4px 3px; }
+        .bubble {
+            padding: 9px 13px;
+            border-radius: var(--radius);
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+        .row.own .bubble { background: var(--own-bubble); color: var(--own-text); }
+        .row.other .bubble { background: var(--other-bubble); border: 1px solid var(--border); }
+        #createResult { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+        .hint { color: var(--muted); font-size: 12px; }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
     </style>
 </head>
 <body>
 <h1>Chat</h1>
-
-<div class="section">
-    <h2>Create user</h2>
-    <label for="username">Username</label>
-    <input type="text" id="username" placeholder="Username">
-    <label for="password">Password</label>
-    <input type="password" id="password" placeholder="Password">
-    <label for="email">Email address</label>
-    <input type="email" id="email" placeholder="Email">
-    <button onclick="createUser()">Create user</button>
-    <p id="createResult"></p>
+<div class="topbar">
+    <span id="whoami">Loading…</span>
+    <span class="hint">Live</span>
 </div>
 
 <div class="section">
@@ -35,13 +143,40 @@
     <label for="messageContent">Message</label>
     <textarea id="messageContent" placeholder="Write a message..." rows="3"></textarea>
     <button onclick="sendMessage()">Send</button>
-    <button onclick="loadMessages()">Refresh</button>
+    <button class="secondary" onclick="loadMessages()">Refresh</button>
+</div>
+
+<div class="section">
+    <h2>Create user</h2>
+    <label for="username">Username</label>
+    <input type="text" id="username" placeholder="Username">
+    <label for="password">Password</label>
+    <input type="password" id="password" placeholder="Password">
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="Email">
+    <button onclick="createUser()">Create</button>
+    <p id="createResult"></p>
 </div>
 
 <script>
+    let currentUser = null;
+
     function getCsrfToken() {
         const cookie = document.cookie.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
         return cookie ? decodeURIComponent(cookie.split('=')[1].trim()) : null;
+    }
+
+    async function loadMe() {
+        try {
+            const response = await fetch('/api/me', { credentials: 'include' });
+            if (response.ok) {
+                const data = await response.json();
+                currentUser = data.username;
+                document.getElementById('whoami').textContent = 'Signed in as ' + currentUser;
+            }
+        } catch (e) {
+            console.error('loadMe failed:', e);
+        }
     }
 
     async function createUser() {
@@ -107,24 +242,27 @@
             if (response.ok) {
                 const messages = await response.json();
                 const div = document.getElementById('messages');
+                const atBottom = div.scrollHeight - div.scrollTop - div.clientHeight < 40;
                 div.innerHTML = '';
                 messages.forEach(m => {
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'message';
+                    const isOwn = m.senderUsername === currentUser;
 
-                    const strong = document.createElement('strong');
-                    strong.textContent = m.senderUsername;
+                    const row = document.createElement('div');
+                    row.className = 'row ' + (isOwn ? 'own' : 'other');
 
-                    const content = document.createTextNode(': ' + m.content + ' ');
+                    const meta = document.createElement('div');
+                    meta.className = 'meta';
+                    meta.textContent = m.senderUsername + ' · ' + m.sentAt;
 
-                    const small = document.createElement('small');
-                    small.textContent = '(' + m.sentAt + ')';
+                    const bubble = document.createElement('div');
+                    bubble.className = 'bubble';
+                    bubble.textContent = m.content;
 
-                    messageDiv.appendChild(strong);
-                    messageDiv.appendChild(content);
-                    messageDiv.appendChild(small);
-                    div.appendChild(messageDiv);
+                    row.appendChild(meta);
+                    row.appendChild(bubble);
+                    div.appendChild(row);
                 });
+                if (atBottom) div.scrollTop = div.scrollHeight;
             } else {
                 document.getElementById('messages').textContent = 'Error loading messages: ' + response.status;
             }
@@ -136,7 +274,9 @@
 
     window.addEventListener('load', async function() {
         await fetch('/csrf', { credentials: 'include' });
+        await loadMe();
         loadMessages();
+        setInterval(loadMessages, 3000);
     });
 </script>
 </body>

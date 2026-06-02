@@ -7,9 +7,12 @@ import org.example.userservice.dto.UserResponse;
 import org.example.userservice.dto.UserUpdateRequest;
 import org.example.userservice.model.User;
 import org.example.userservice.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -40,14 +43,24 @@ public class UserController {
     }
 
     @PostMapping
-    public UserResponse create(@RequestBody UserRequest request) {
-        User user = new User(
-                request.username(),
-                passwordEncoder.encode(request.password()),
-                request.email()
-        );
-        User saved = userRepository.save(user);
-        return new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail());
+    public ResponseEntity<UserResponse> create(@RequestBody UserRequest request) {
+        // Reject duplicates with a clear 409 instead of surfacing a DB error.
+        if (userRepository.findByUsername(request.username()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already taken");
+        }
+        try {
+            User user = new User(
+                    request.username(),
+                    passwordEncoder.encode(request.password()),
+                    request.email()
+            );
+            User saved = userRepository.save(user);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail()));
+        } catch (DataIntegrityViolationException e) {
+            // Catches the unique constraint on email (or a race on username).
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username or email already taken");
+        }
     }
 
     @PutMapping("/{id}")

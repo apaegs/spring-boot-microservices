@@ -30,6 +30,8 @@ public class BffConfig {
         return http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/favicon.ico", "/error").permitAll()
+                        // Public pages: landing, registration, and the CSRF bootstrap.
+                        .requestMatchers("/", "/index.html", "/register.html", "/api/register", "/csrf").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(csrf -> csrf
@@ -53,6 +55,17 @@ public class BffConfig {
                 .before(uri(userServiceUrl))
                 .before(stripPrefix(1))
                 .filter(tokenRelay())
+                .build();
+    }
+
+    // Public registration route: forwards POST /api/register to the user-service's
+    // POST /users without relaying a token (the caller is not logged in yet).
+    @Bean
+    public RouterFunction<ServerResponse> registerRoute() {
+        return route()
+                .POST("/api/register", http())
+                .before(uri(userServiceUrl))
+                .before(setPath("/users"))
                 .build();
     }
 
