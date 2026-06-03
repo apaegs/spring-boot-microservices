@@ -16,6 +16,8 @@ public class MeController {
 
     @GetMapping("/api/me")
     public Map<String, String> me(@AuthenticationPrincipal OAuth2User principal) {
+        // getName() returns the 'sub' claim (user-name-attribute=sub in application.properties).
+        // Message service also identifies senders by sub, so the isOwn check aligns.
         String username = principal != null ? principal.getName() : "unknown";
         return Map.of("username", username);
     }
