@@ -9,19 +9,13 @@ import org.springframework.security.config.annotation.web.configurers.oauth2.ser
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
-// NOTE: After pasting this file, IntelliJ will flag OAuth2AuthorizationServerConfigurer
-// as an unresolved symbol. Put the cursor on it and press Alt+Enter -> "Import class".
-// IntelliJ will add the correct import for your Spring Security 7.0.5 jar.
-// If offered several options, choose the one under
-// org.springframework.security.oauth2.server.authorization
-
 @Configuration
 public class WebSecurityConfig {
 
     /**
      * Chain 1: the OAuth2 / OIDC protocol endpoints (/oauth2/authorize,
      * /oauth2/token, /oauth2/jwks, /userinfo, ...). getEndpointsMatcher()
-     * restricts this chain to exactly those endpoints, and registers all the
+     * restricts this chain to exactly those endpoints and registers all the
      * authorization-server request handlers. Unauthenticated requests to the
      * authorize endpoint are sent to /login.
      */
@@ -50,6 +44,7 @@ public class WebSecurityConfig {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/login", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
