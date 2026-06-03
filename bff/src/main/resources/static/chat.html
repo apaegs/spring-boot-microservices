@@ -155,10 +155,12 @@
 
 <script>
     let currentUser = null;
-    // Guards against overlapping loadMessages() calls (poll + Refresh button).
-    // Without this, a slow fetch could be overtaken by the next one and an
-    // older response could overwrite a newer render.
+    // Guards against overlapping loadMessages() calls (poll + Refresh + send).
     let isLoadingMessages = false;
+    // If a refresh is requested while one is in flight, remember to run one more
+    // afterwards, so e.g. sending a message always results in a visible update
+    // instead of being dropped until the next poll.
+    let pendingRefresh = false;
 
     function getCsrfToken() {
         const cookie = document.cookie.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
@@ -214,8 +216,12 @@
     }
 
     async function loadMessages() {
-        // Skip if a fetch is already in flight; the in-progress one will render.
-        if (isLoadingMessages) return;
+        // If a fetch is already running, queue a single follow-up instead of
+        // dropping this request, then return.
+        if (isLoadingMessages) {
+            pendingRefresh = true;
+            return;
+        }
         isLoadingMessages = true;
         try {
             const response = await fetch('/api/messages', {
@@ -253,8 +259,12 @@
             console.error('loadMessages failed:', e);
             document.getElementById('messages').textContent = 'Network error loading messages.';
         } finally {
-            // Always release the guard, even on error, so polling can continue.
             isLoadingMessages = false;
+            // If a refresh was requested while this one ran, run it now (once).
+            if (pendingRefresh) {
+                pendingRefresh = false;
+                loadMessages();
+            }
         }
     }
 
