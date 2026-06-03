@@ -36,9 +36,6 @@
             margin: 0 0 4px;
         }
         .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             color: var(--muted);
             font-size: 13px;
             margin-bottom: 22px;
@@ -99,15 +96,6 @@
         }
         button:hover { background: var(--accent-hover); }
         button.secondary:hover { background: var(--border); }
-        button.logout {
-            background: var(--panel-2);
-            border: 1px solid var(--border);
-            color: var(--text);
-            margin: 0;
-            padding: 6px 14px;
-            font-size: 13px;
-        }
-        button.logout:hover { background: var(--border); }
         #messages {
             background: var(--bg);
             border: 1px solid var(--border);
@@ -141,7 +129,6 @@
 <h1>Chat</h1>
 <div class="topbar">
     <span id="whoami">Loading…</span>
-    <button class="logout" onclick="logout()">Log out</button>
 </div>
 
 <div class="section">
@@ -216,8 +203,6 @@
     }
 
     async function loadMessages() {
-        // If a fetch is already running, queue a single follow-up instead of
-        // dropping this request, then return.
         if (isLoadingMessages) {
             pendingRefresh = true;
             return;
@@ -260,27 +245,11 @@
             document.getElementById('messages').textContent = 'Network error loading messages.';
         } finally {
             isLoadingMessages = false;
-            // If a refresh was requested while this one ran, run it now (once).
             if (pendingRefresh) {
                 pendingRefresh = false;
                 loadMessages();
             }
         }
-    }
-
-    function logout() {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/logout';
-
-        const token = document.createElement('input');
-        token.type = 'hidden';
-        token.name = '_csrf';
-        token.value = getCsrfToken() || '';
-        form.appendChild(token);
-
-        document.body.appendChild(form);
-        form.submit();
     }
 
     // Self-scheduling poll: the next poll is only queued after the previous
