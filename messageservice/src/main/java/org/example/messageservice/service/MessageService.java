@@ -45,17 +45,6 @@ public class MessageService {
         this.userServiceStub = userServiceStub;
     }
 
-    /**
-     * Accepts a message, verifies the sender via gRPC against the user-service,
-     * persists the message, and writes a "message-published" event to the outbox
-     * table within the same transaction. The outbox event is later published to
-     * RabbitMQ by {@link OutboxPublisher}, guaranteeing that the message and the
-     * event are either both saved or neither is (transactional outbox).
-     *
-     * @param senderUsername the username taken from the authenticated user's JWT
-     * @param request        the message content to send
-     * @return a {@link MessageResponse} containing the saved message's data
-     */
     @Transactional
     public MessageResponse send(String senderUsername, MessageRequest request) {
         String verifiedUsername = fetchUsername(senderUsername);

@@ -15,7 +15,7 @@ public class WebSecurityConfig {
     /**
      * Chain 1: the OAuth2 / OIDC protocol endpoints (/oauth2/authorize,
      * /oauth2/token, /oauth2/jwks, /userinfo, ...). getEndpointsMatcher()
-     * restricts this chain to exactly those endpoints, and registers all the
+     * restricts this chain to exactly those endpoints and registers all the
      * authorization-server request handlers. Unauthenticated requests to the
      * authorize endpoint are sent to /login.
      */
