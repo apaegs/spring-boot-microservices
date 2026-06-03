@@ -43,10 +43,12 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> create(@RequestBody UserRequest request) {
-        // Reject duplicates with a clear 409 instead of surfacing a DB error.
+    public ResponseEntity<UserResponse> create(@RequestBody @Valid UserRequest request) {
         if (userRepository.findByUsername(request.username()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already taken");
+        }
+        if (userRepository.findByEmail(request.email()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already taken");
         }
         try {
             User user = new User(
@@ -58,7 +60,9 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail()));
         } catch (DataIntegrityViolationException e) {
-            // Catches the unique constraint on email (or a race on username).
+            // Fallback only: the pre-checks above handle the normal duplicate
+            // case. This catches a rare race where two requests pass the checks
+            // concurrently and one then violates the unique constraint.
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username or email already taken");
         }
     }

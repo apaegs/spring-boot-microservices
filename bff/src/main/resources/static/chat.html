@@ -43,11 +43,6 @@
             font-size: 13px;
             margin-bottom: 22px;
         }
-        .topbar .right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
         .section {
             background: var(--panel);
             border: 1px solid var(--border);
@@ -104,7 +99,6 @@
         }
         button:hover { background: var(--accent-hover); }
         button.secondary:hover { background: var(--border); }
-        /* Logout sits in the top bar and stays compact. */
         button.logout {
             background: var(--panel-2);
             border: 1px solid var(--border);
@@ -138,7 +132,6 @@
         }
         .row.own .bubble { background: var(--own-bubble); color: var(--own-text); }
         .row.other .bubble { background: var(--other-bubble); border: 1px solid var(--border); }
-        .hint { color: var(--muted); font-size: 12px; }
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
@@ -148,9 +141,7 @@
 <h1>Chat</h1>
 <div class="topbar">
     <span id="whoami">Loading…</span>
-    <span class="right">
-        <button class="logout" onclick="logout()">Log out</button>
-    </span>
+    <button class="logout" onclick="logout()">Log out</button>
 </div>
 
 <div class="section">
@@ -164,10 +155,23 @@
 
 <script>
     let currentUser = null;
+    // Guards against overlapping loadMessages() calls (poll + Refresh button).
+    // Without this, a slow fetch could be overtaken by the next one and an
+    // older response could overwrite a newer render.
+    let isLoadingMessages = false;
 
     function getCsrfToken() {
         const cookie = document.cookie.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
         return cookie ? decodeURIComponent(cookie.split('=')[1].trim()) : null;
+    }
+
+    // Formats an ISO timestamp as "14:32, 3 Jun".
+    function formatTime(iso) {
+        const d = new Date(iso);
+        if (isNaN(d)) return iso;
+        const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        const date = d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+        return time + ', ' + date;
     }
 
     async function loadMe() {
@@ -210,6 +214,9 @@
     }
 
     async function loadMessages() {
+        // Skip if a fetch is already in flight; the in-progress one will render.
+        if (isLoadingMessages) return;
+        isLoadingMessages = true;
         try {
             const response = await fetch('/api/messages', {
                 credentials: 'include'
@@ -228,7 +235,7 @@
 
                     const meta = document.createElement('div');
                     meta.className = 'meta';
-                    meta.textContent = m.senderUsername + ' · ' + m.sentAt;
+                    meta.textContent = m.senderUsername + ' · ' + formatTime(m.sentAt);
 
                     const bubble = document.createElement('div');
                     bubble.className = 'bubble';
@@ -245,11 +252,12 @@
         } catch (e) {
             console.error('loadMessages failed:', e);
             document.getElementById('messages').textContent = 'Network error loading messages.';
+        } finally {
+            // Always release the guard, even on error, so polling can continue.
+            isLoadingMessages = false;
         }
     }
 
-    // Logout posts to Spring Security's /logout endpoint via a CSRF-protected
-    // form submit, then the server redirects back to the landing page.
     function logout() {
         const form = document.createElement('form');
         form.method = 'POST';
@@ -265,11 +273,16 @@
         form.submit();
     }
 
+    // Self-scheduling poll: the next poll is only queued after the previous
+    // loadMessages() finishes, so a slow network can't pile up requests.
+    function scheduleNextPoll() {
+        loadMessages().finally(() => setTimeout(scheduleNextPoll, 3000));
+    }
+
     window.addEventListener('load', async function() {
         await fetch('/csrf', { credentials: 'include' });
         await loadMe();
-        loadMessages();
-        setInterval(loadMessages, 3000);
+        scheduleNextPoll();
     });
 </script>
 </body>
