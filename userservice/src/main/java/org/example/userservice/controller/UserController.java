@@ -7,9 +7,11 @@ import org.example.userservice.dto.UserResponse;
 import org.example.userservice.dto.UserUpdateRequest;
 import org.example.userservice.model.User;
 import org.example.userservice.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -40,14 +42,30 @@ public class UserController {
     }
 
     @PostMapping
-    public UserResponse create(@RequestBody UserRequest request) {
+    public ResponseEntity<UserResponse> create(@RequestBody @Valid UserRequest request) {
+        // Check both username and email up front, but respond with a single
+        // generic 409 regardless of which one conflicts. Distinct messages would
+        // leak whether a given username/email is already registered (account
+        // enumeration), so we deliberately keep the response generic.
+        boolean usernameTaken = userRepository.findByUsername(request.username()).isPresent();
+        boolean emailTaken = userRepository.findByEmail(request.email()).isPresent();
+        if (usernameTaken || emailTaken) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username or email already taken");
+        }
+
+        // No catch for DataIntegrityViolationException here: the checks above
+        // handle the normal duplicate case database-agnostically. Any remaining
+        // integrity violation (e.g. a rare concurrent race, or some other
+        // constraint) is allowed to propagate as a 500 rather than being masked
+        // as a false 409.
         User user = new User(
                 request.username(),
                 passwordEncoder.encode(request.password()),
                 request.email()
         );
         User saved = userRepository.save(user);
-        return new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail()));
     }
 
     @PutMapping("/{id}")

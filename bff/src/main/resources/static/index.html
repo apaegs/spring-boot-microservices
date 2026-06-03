@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #16191f;
+            --border: #262b33;
+            --text: #e6e8eb;
+            --muted: #8b929c;
+            --accent: #3b82f6;
+            --accent-hover: #2f6fd6;
+            --radius: 8px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+        h1 { font-size: 26px; font-weight: 600; margin: 0 0 6px; }
+        .sub { color: var(--muted); font-size: 14px; margin: 0 0 28px; }
+        a.btn {
+            display: block;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 500;
+            margin-top: 12px;
+            transition: background 0.15s;
+        }
+        a.primary { background: var(--accent); color: #fff; }
+        a.primary:hover { background: var(--accent-hover); }
+        a.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+        a.secondary:hover { background: var(--border); }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Chat</h1>
+    <p class="sub">A distributed chat application.</p>
+    <a class="btn primary" href="/oauth2/authorization/authservice">Sign in</a>
+    <a class="btn secondary" href="/register.html">Create account</a>
+</div>
+</body>
+</html>

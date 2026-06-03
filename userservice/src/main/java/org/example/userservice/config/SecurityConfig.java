@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -49,6 +50,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
+                        // Public self-registration: only creating a user (POST /users) is open.
+                        // Listing/reading/updating/deleting users still requires authentication.
+                        .requestMatchers(HttpMethod.POST, "/users").permitAll()
                         .requestMatchers("/users/auth/**").access(
                                 new org.springframework.security.web.access.expression.WebExpressionAuthorizationManager(
                                         "hasIpAddress('127.0.0.1') or hasIpAddress('::1') or hasIpAddress('172.16.0.0/12') or hasIpAddress('10.0.0.0/8')"

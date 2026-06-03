@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #16191f;
+            --panel-2: #1c2027;
+            --border: #262b33;
+            --text: #e6e8eb;
+            --muted: #8b929c;
+            --accent: #3b82f6;
+            --accent-hover: #2f6fd6;
+            --ok: #4ade80;
+            --err: #f87171;
+            --radius: 8px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-size: 15px;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            width: 100%;
+            max-width: 380px;
+        }
+        h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+        .sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+        label { display: block; color: var(--muted); font-size: 13px; margin: 12px 0 4px; }
+        input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 14px;
+            border-radius: var(--radius);
+        }
+        input:focus { outline: none; border-color: var(--accent); }
+        button {
+            width: 100%;
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            padding: 11px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius);
+            margin-top: 20px;
+            transition: background 0.15s;
+        }
+        button:hover { background: var(--accent-hover); }
+        .result { font-size: 13px; margin: 14px 0 0; min-height: 18px; }
+        .result.ok { color: var(--ok); }
+        .result.err { color: var(--err); }
+        .footer { color: var(--muted); font-size: 13px; margin-top: 18px; text-align: center; }
+        .footer a { color: var(--accent); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Create account</h1>
+    <p class="sub">Sign up to start chatting.</p>
+
+    <!-- Real form element: gives Enter-to-submit and native form semantics.
+         The submit handler calls register() and prevents the default reload. -->
+    <form id="registerForm">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Username" autocomplete="username">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Password" autocomplete="new-password">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Email" autocomplete="email">
+
+        <button type="submit">Create account</button>
+    </form>
+    <p class="result" id="result"></p>
+
+    <p class="footer"><a href="/">Back</a></p>
+</div>
+
+<script>
+    function getCsrfToken() {
+        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
+        return cookie ? decodeURIComponent(cookie.split('=')[1].trim()) : null;
+    }
+
+    async function register() {
+        const result = document.getElementById('result');
+        result.className = 'result';
+        result.textContent = '';
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const email = document.getElementById('email').value.trim();
+
+        if (!username || !password || !email) {
+            result.className = 'result err';
+            result.textContent = 'Please fill in all fields.';
+            return;
+        }
+
+        // CSRF guard: if the token is missing (e.g. the initial /csrf bootstrap
+        // failed or the cookie expired), try to fetch it once more before giving
+        // up. If it's still missing, abort with a clear message instead of
+        // sending a request that would just be rejected with 403.
+        let csrfToken = getCsrfToken();
+        if (!csrfToken) {
+            try {
+                await fetch('/csrf', { credentials: 'include' });
+            } catch (e) {
+                console.error('CSRF re-fetch failed:', e);
+            }
+            csrfToken = getCsrfToken();
+        }
+        if (!csrfToken) {
+            result.className = 'result err';
+            result.textContent = 'Your session expired. Please refresh the page and try again.';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': csrfToken
+                },
+                credentials: 'include',
+                body: JSON.stringify({ username, password, email })
+            });
+
+            if (response.ok) {
+                const user = await response.json();
+                result.className = 'result ok';
+                result.textContent = 'Account created for ' + user.username + '. Redirecting to sign in…';
+                setTimeout(() => { window.location.href = '/oauth2/authorization/authservice'; }, 1500);
+            } else if (response.status === 409) {
+                result.className = 'result err';
+                result.textContent = 'That username or email is already taken.';
+            } else {
+                result.className = 'result err';
+                result.textContent = 'Could not create account (error ' + response.status + ').';
+            }
+        } catch (e) {
+            console.error('register failed:', e);
+            result.className = 'result err';
+            result.textContent = 'Network error, please try again.';
+        }
+    }
+
+    // Wire the form's submit event to register(), preventing the default
+    // page reload so the existing fetch-based flow is preserved.
+    document.getElementById('registerForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        register();
+    });
+
+    window.addEventListener('load', async function() {
+        await fetch('/csrf', { credentials: 'include' });
+    });
+</script>
+</body>
+</html>
