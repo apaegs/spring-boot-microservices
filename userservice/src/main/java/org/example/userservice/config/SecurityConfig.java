@@ -50,6 +50,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
+                        // Health probes must be reachable by Kubernetes without auth,
+                        // otherwise the readiness/liveness checks get 401/403 and the
+                        // pod is never considered ready.
+                        .requestMatchers("/actuator/health/**").permitAll()
                         // Public self-registration: only creating a user (POST /users) is open.
                         // Listing/reading/updating/deleting users still requires authentication.
                         .requestMatchers(HttpMethod.POST, "/users").permitAll()

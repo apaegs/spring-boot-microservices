@@ -30,6 +30,8 @@ public class BffConfig {
         return http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/favicon.ico", "/error").permitAll()
+                        // Health probes must be reachable by Kubernetes without auth.
+                        .requestMatchers("/actuator/health/**").permitAll()
                         // Public pages: landing, registration, and the CSRF bootstrap.
                         .requestMatchers("/", "/index.html", "/register.html", "/api/register", "/csrf").permitAll()
                         .anyRequest().authenticated()

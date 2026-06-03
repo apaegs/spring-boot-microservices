@@ -1,3 +1,4 @@
+
 package org.example.messageservice.config;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +48,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
+                        // Health probes must be reachable by Kubernetes without auth,
+                        // otherwise the readiness/liveness checks get 401/403 and the
+                        // pod is never considered ready.
+                        .requestMatchers("/actuator/health/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
