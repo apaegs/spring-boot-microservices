@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #16191f;
+            --panel-2: #1c2027;
+            --border: #262b33;
+            --text: #e6e8eb;
+            --muted: #8b929c;
+            --accent: #3b82f6;
+            --accent-hover: #2f6fd6;
+            --err: #f87171;
+            --radius: 8px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-size: 15px;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            width: 100%;
+            max-width: 380px;
+        }
+        h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+        .sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+        label { display: block; color: var(--muted); font-size: 13px; margin: 12px 0 4px; }
+        input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 14px;
+            border-radius: var(--radius);
+        }
+        input:focus { outline: none; border-color: var(--accent); }
+        button {
+            width: 100%;
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            padding: 11px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius);
+            margin-top: 20px;
+            transition: background 0.15s;
+        }
+        button:hover { background: var(--accent-hover); }
+        .error {
+            color: var(--err);
+            font-size: 13px;
+            margin: 14px 0 0;
+            text-align: center;
+        }
+        .footer { color: var(--muted); font-size: 13px; margin-top: 18px; text-align: center; }
+        .footer a { color: var(--accent); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Sign in</h1>
+    <p class="sub">Welcome back. Enter your credentials to continue.</p>
+
+    <p class="error" th:if="${param.error}">Invalid username or password.</p>
+
+    <form method="post" th:action="@{/login}">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Username"
+               autocomplete="username" autofocus>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Password"
+               autocomplete="current-password">
+
+        <!-- Thymeleaf renders the CSRF token server-side, so no JS or cookie reading is needed. -->
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+        <button type="submit">Sign in</button>
+    </form>
+
+    <p class="footer">
+        No account? <a href="http://app.localhost/register.html">Create one</a>
+    </p>
+</div>
+</body>
+</html>
