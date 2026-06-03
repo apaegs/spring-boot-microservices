@@ -17,12 +17,6 @@ public class LoginController {
     @Value("${public.app.url}")
     private String publicAppUrl;
 
-    /**
-     * Serves the Thymeleaf login template at templates/login.html.
-     * Thymeleaf renders the CSRF token into the form server-side.
-     * The public app URL is added to the model so the "Create one"
-     * link can be built without hardcoding the host.
-     */
     @GetMapping("/login")
     public String login(Model model) {
         model.addAttribute("publicAppUrl", publicAppUrl);
